@@ -1,0 +1,25 @@
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data and results (optional - you can keep them locally)
+data/
+results/
+
+# Model files
+*.pth
+*.pt
+
+# MacOS
+.DS_Store
+
+.ipynb_checkpoints/
+*.bin
