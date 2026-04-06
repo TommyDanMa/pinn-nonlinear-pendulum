@@ -16,6 +16,10 @@ class PINN(nn.Module):
     def __init__(self, hidden_layers=4, neurons=64, activation=Sin, fix_b=False, b_true=0.25):
         super().__init__()
 
+        self.activation = activation
+
+        # ====================== NETWORK ======================
+
         # Input layer: t → hidden
         layers = [nn.Linear(1, neurons)]
 
@@ -30,6 +34,7 @@ class PINN(nn.Module):
 
         self.net = nn.Sequential(*layers)
 
+        # ====================== SIREN INITIALIZATION ======================
         with torch.no_grad():
             # First layer: scale by 1 (input is just t)
             nn.init.uniform_(self.net[0].weight, -1.0, 1.0)
@@ -44,9 +49,9 @@ class PINN(nn.Module):
                                      torch.sqrt(torch.tensor(6.0 / fan_in)))
                     self.net[i].bias.data.uniform_(-1.0, 1.0)
 
-        # Damping coefficient
+        # ====================== DAMPING PARAMETER ======================
         if fix_b:
-            self.b = torch.tensor([b_true], dtype=torch.float32, requires_grad=False)
+            self.register_buffer('b', torch.tensor([b_true], dtype=torch.float32))
         else:
             self.b = nn.Parameter(torch.tensor([0.1], dtype=torch.float32))
 

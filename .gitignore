@@ -10,10 +10,6 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Data and results (optional - you can keep them locally)
-data/
-results/
-
 # Model files
 *.pth
 *.pt

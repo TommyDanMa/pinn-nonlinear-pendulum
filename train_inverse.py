@@ -26,28 +26,32 @@ omega0 = torch.tensor([[data["omega0"]]], dtype=torch.float32).to(device)
 g = data["g"]
 L = data["L"]
 b_true = data["b_true"]
+b_history = []
 
-# More collocation points + random sampling (already good)
+# Collocation points (random)
 num_collocation = 15000
 t_collocation = (torch.rand(num_collocation, 1) * 10.0).to(device)
 t_collocation.requires_grad_(True)
 
-# ========================= MODEL =========================
+# ========================= MODEL (learnable b) =========================
 model = PINN(
     hidden_layers=4,
     neurons=64,
-    activation=Sin,      # explicitly use the Sin you defined
-    fix_b=True,
+    activation=Sin,
+    fix_b=False,           # ← Now b is trainable!
     b_true=b_true
 ).to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0008)
+optimizer = torch.optim.Adam([
+    {'params': model.net.parameters(), 'lr': 0.0005},   # network weights
+    {'params': [model.b], 'lr': 0.00005}                # much smaller LR for b
+])
 
 print(f"Model has {sum(p.numel() for p in model.parameters() if p.requires_grad):,} trainable parameters")
-print(f"Training on device: {device} | Fixed b = {model.b.item():.3f}")
+print(f"Initial b = {model.b.item():.4f} (true b = {b_true})")
 
 # ========================= TRAINING =========================
-num_epochs = 15000
+num_epochs = 20000
 os.makedirs("results/models", exist_ok=True)
 
 for epoch in range(num_epochs):
@@ -64,21 +68,28 @@ for epoch in range(num_epochs):
         g=g,
         L=L,
         lambda_physics=1.0,
-        lambda_data=0.01,
-        lambda_ic=150.0
+        lambda_data=8.0,      # Strong data term for inverse
+        lambda_ic=30.0
     )
 
     total_l.backward()
     optimizer.step()
 
+    if epoch % 100 == 0 or epoch == num_epochs - 1:
+        b_history.append(model.b.item())
+
     if epoch % 1000 == 0 or epoch == num_epochs - 1:
         print(f"Epoch {epoch:5d} | Total: {total_l.item():.2e} | Phys: {phys_l.item():.2e} | "
-              f"Data: {data_l.item():.2e} | IC: {ic_l.item():.2e}")
+              f"Data: {data_l.item():.2e} | IC: {ic_l.item():.2e} | Learned b: {model.b.item():.4f}")
 
-print("Forward training finished!")
+print("Inverse training finished!")
 
-# Save
-torch.save({'model_state_dict': model.state_dict()}, "results/models/forward_pinn_fixed.pth")
+# Save model
+torch.save({
+    'model_state_dict': model.state_dict(),
+    'learned_b': model.b.item(),
+    'true_b': b_true
+}, "results/models/inverse_pinn.pth")
 
 # ========================= PLOT =========================
 model.eval()
@@ -87,17 +98,30 @@ with torch.no_grad():
 
 plt.figure(figsize=(10, 6))
 plt.plot(t_true, theta_true, 'b-', label='Ground Truth (SciPy)', linewidth=2)
-plt.plot(t_true, theta_pred, 'r--', label='PINN Forward Prediction (fixed)', linewidth=2)
+plt.plot(t_true, theta_pred, 'r--', label='PINN Inverse Prediction', linewidth=2)
 plt.scatter(t_meas, theta_meas_noisy, c='black', s=20, label='Noisy Measurements')
 plt.xlabel('Time (s)')
 plt.ylabel('Angle θ (radians)')
-plt.title('Forward PINN – Corrected Version')
+plt.title('Inverse PINN: Learned Motion + Discovered Damping')
 plt.legend()
 plt.grid(True, alpha=0.3)
-plt.savefig("results/plots/forward_pinn_result.png", dpi=200, bbox_inches='tight')
+plt.savefig("results/plots/inverse_pinn_result.png", dpi=200, bbox_inches='tight')
 plt.show()
 
-print("Plot saved as results/plots/forward_pinn_result.png")
+# b-learning curve
+plt.figure(figsize=(8, 5))
+plt.plot(range(0, len(b_history)*100, 100), b_history, 'b-', label='Learned b')
+plt.axhline(y=b_true, color='r', linestyle='--', label=f'True b = {b_true}')
+plt.xlabel('Epoch')
+plt.ylabel('Damping coefficient b')
+plt.title('Evolution of learned damping coefficient')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.savefig("results/plots/b_learning_curve.png", dpi=200, bbox_inches='tight')
+plt.show()
+
+print(f"Learned damping coefficient b = {model.b.item():.4f} (True value was {b_true})")
+print("Plot saved as results/plots/inverse_pinn_result.png")
 
 with torch.no_grad():
     theta_pred = model(t_true_tensor).cpu().numpy().flatten()
