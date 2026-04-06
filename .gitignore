@@ -23,3 +23,4 @@ results/
 
 .ipynb_checkpoints/
 *.bin
+.idea
