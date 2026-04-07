@@ -11,7 +11,9 @@ The project demonstrates how AI can embed physical laws directly into the loss f
 
 ## Physics Background
 The system is governed by the nonlinear damped pendulum equation:
+
   $$\frac{d^2\theta}{dt^2} + b \frac{d\theta}{dt} + \frac{g}{L}\sin\theta = 0$$
+  
 Where:
 - $\frac{d^2\theta}{dt^2}$: angular acceleration
 - $b$: damping coefficient (friction/air resistance; the unknown parameter in the inverse problem)
