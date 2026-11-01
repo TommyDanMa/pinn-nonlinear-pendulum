@@ -5,9 +5,9 @@
 This project implements a **Physics-Informed Neural Network (PINN)** that solves the nonlinear damped pendulum ODE in two complementary ways:
 
 - **Forward problem**: Predicts the full motion θ(t) when all physical parameters are known.
-- **Inverse problem**: Discovers the unknown damping coefficient \( b \) from only 40 noisy measurements while strictly enforcing the physical law.
+- **Inverse problem**: Discovers the unknown damping coefficient \( b \) from only 40 noisy measurements while penalizing violations of the physical law through a soft residual loss.
 
-The project demonstrates how AI can embed physical laws directly into the loss function and recover hidden parameters, a frontier technique used in scientific machine learning research.
+The project demonstrates how AI can embed physical laws directly into the loss function and recover hidden parameters, a standard approach in scientific machine learning research.
 
 ## Physics Background
 The system is governed by the nonlinear damped pendulum equation:
@@ -25,14 +25,21 @@ Initial conditions: $\theta(0) = 1.0$ rad (~57°), $\frac{d\theta}{dt}$(0) = 0.
 
 ## Methodology
 1. **Data generation**: Synthetic ground-truth trajectory generated with SciPy’s `solve_ivp`. 40 noisy measurements (2 % Gaussian noise) simulate real lab data.
-2. **Neural network**: 4-hidden-layer MLP with sinusoidal (SIREN-style) activation and automatic differentiation to compute $\frac{d\theta}{dt}$ and $\frac{d^2\theta}{dt^2}$. ([models.py](models.py))
+2. **Neural network**: MLP (the default implementation has five hidden linear layers) with sinusoidal (SIREN-style) activation and automatic differentiation to compute $\frac{d\theta}{dt}$ and $\frac{d^2\theta}{dt^2}$. ([models.py](models.py))
 3. **Loss functions**: Physics residual + data fidelity + initial condition enforcement. ([losses.py](losses.py))
 4. **Training**:
    - Forward: fixed $b = 0.25$, small data anchoring to avoid trivial solutions.
    - Inverse: $b$ is a learnable parameter; the network discovers its value from noisy data.
 
+## Historical reported metrics (not independently reproduced)
+
+The figures are committed, but trained checkpoints and raw training logs are not.
+The values below are historical reports, not freshly verified measurements; the
+current scripts alone cannot establish these exact values without retraining.
+No superiority over a conventional ODE solver is claimed.
+
 ## Results - Forward Problem
-Switching from Tanh to sinusoidal activation dramatically improved convergence and eliminated the common “trivial solution” problem (collapse to equilibrium).
+Switching from Tanh to sinusoidal activation dramatically improved convergence and avoided the “trivial solution” problem in the reported run (collapse to equilibrium).
 ![Forward PINN (Tanh activation)](results/plots/forward_pinn_result_tanh.png)
 
 **Final forward results** (after 15 000 epochs):
@@ -44,7 +51,7 @@ Switching from Tanh to sinusoidal activation dramatically improved convergence a
 A small data term (λ_data = 0.01) was used only to stabilize training.
 
 ## Results - Inverse Problem
-The inverse PINN discovers the unknown damping coefficient while still obeying the ODE.
+The inverse PINN discovers the unknown damping coefficient while minimizing a soft ODE-residual penalty.
 
 **Final inverse results** (after 20 000 epochs):
 - Learned damping: \( b = 0.2527 \) (true value = 0.25)
@@ -66,7 +73,13 @@ The parameter $b$ converged rapidly in the first ~2 000 epochs and then stabiliz
 | b relative error        | -               | ~1.08 %         |
 
 ## How to Run
+
+Use Python 3.11+ from the repository root:
+
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 python data_generation.py
 python train_forward.py
 python train_inverse.py
@@ -83,3 +96,24 @@ This project taught me how to embed physical laws into neural networks,
 handle inverse problems with noisy data, diagnose and fix common PINN failure modes 
 (trivial solutions), and produce reproducible scientific ML research. 
 It strengthened my skills in PyTorch, automatic differentiation, and computational physics.
+
+## Demonstration without retraining
+
+Open [the committed comparison animation](results/animation/pendulum_comparison.gif)
+in a browser. This is a recorded demonstration of the reported forward prediction
+against synthetic SciPy ground truth, not fresh model inference. The plotting script
+`animate_pendulum.py` needs `results/models/forward_pinn_fixed.pth` and
+`results/models/inverse_pinn.pth`; neither checkpoint is distributed in this repository.
+Do not run that script expecting a fresh clone to contain trained models.
+`data/` contains synthetic data only: 40 irregularly sampled observations, with Gaussian
+noise scaled to 2% of each clean observation's absolute value.
+
+## Contributions and assistance
+
+Tommy originated this independent learning experiment before formal IOAI training
+and substantially implemented it himself. AI was consulted on implementation details,
+with very little AI-generated code. This is an introduction to scientific machine
+learning, not a novel numerical method. PyTorch, SciPy, NumPy, Matplotlib and Pillow
+provide the external software used here; see their imports and `requirements.txt`.
+Codex assisted with the November 2026 documentation and portability corrections;
+that assistance does not describe the authorship of the original experiment.
