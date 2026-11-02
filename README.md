@@ -110,9 +110,13 @@ noise scaled to 2% of each clean observation's absolute value.
 
 ## Contributions and assistance
 
-Tommy originated this independent learning experiment before formal IOAI training
-and substantially implemented it himself. AI was consulted on implementation details,
-with very little AI-generated code. This is an introduction to scientific machine
+Tommy chose this independent learning experiment after asking ChatGPT for a
+manageable project with which to demonstrate his coding skills when contacting
+researchers. The inverse problem and the opportunity to work with neural networks
+interested him. This was before formal IOAI training, and he substantially
+implemented it himself, with very little AI-generated code. Early debugging was
+guided by ChatGPT's suggestions, including architecture and training settings and
+a comparison of tanh and sine activations. This is an introduction to scientific machine
 learning, not a novel numerical method. PyTorch, SciPy, NumPy, Matplotlib and Pillow
 provide the external software used here; see their imports and `requirements.txt`.
 Codex assisted with the November 2026 documentation and portability corrections;
