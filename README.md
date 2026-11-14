@@ -107,17 +107,3 @@ against synthetic SciPy ground truth, not fresh model inference. The plotting sc
 Do not run that script expecting a fresh clone to contain trained models.
 `data/` contains synthetic data only: 40 irregularly sampled observations, with Gaussian
 noise scaled to 2% of each clean observation's absolute value.
-
-## Contributions and assistance
-
-Tommy chose this independent learning experiment after asking ChatGPT for a
-manageable project with which to demonstrate his coding skills when contacting
-researchers. The inverse problem and the opportunity to work with neural networks
-interested him. This was before formal IOAI training, and he substantially
-implemented it himself, with very little AI-generated code. Early debugging was
-guided by ChatGPT's suggestions, including architecture and training settings and
-a comparison of tanh and sine activations. This is an introduction to scientific machine
-learning, not a novel numerical method. PyTorch, SciPy, NumPy, Matplotlib and Pillow
-provide the external software used here; see their imports and `requirements.txt`.
-Codex assisted with the November 2026 documentation and portability corrections;
-that assistance does not describe the authorship of the original experiment.
